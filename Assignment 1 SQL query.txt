@@ -1,0 +1,128 @@
+1. Download vechile sales data -> https://github.com/shashank-mishra219/Hive-Class/blob/main/sales_order_data.csv
+
+2. Store raw data into hdfs location
+
+hdfs dfs -put /home/cloudera/harsh/sales_order_data.csv /harsh
+
+
+3. Create a internal hive table "sales_order_csv" which will store csv data sales_order_csv .. make sure to skip header row while creating table
+
+create table sales_order_csv
+(
+ORDERNUMBER int,
+QUANTITYORDERED int,
+PRICEEACH int,
+ORDERLINENUMBER int,
+SALES float,
+STATUS string,
+QTR_ID int,
+MONTH_ID int,
+YEAR_ID int,
+PRODUCTLINE string,
+MSRP int,
+PRODUCTCODE string,
+PHONE int,
+CITY string,
+STATE string,
+POSTALCODE int,
+COUNTRY string,
+TERRITORY string,
+CONTACTLASTNAME string,
+CONTACTFIRSTNAME string,
+DEALSIZE string
+)
+row format delimited  
+fields terminated by ','
+tblproperties("skip.header.line.count"="1"); 
+
+4. Load data from hdfs path into "sales_order_csv" 
+
+load data inpath '/harsh/sales_order_data.csv' into table sales_order_csv; 
+
+
+5. Create an internal hive table which will store data in ORC format "sales_order_orc"
+
+create table sales_order_orc
+(
+ORDERNUMBER int,
+QUANTITYORDERED int,
+PRICEEACH int,
+ORDERLINENUMBER int,
+SALES float,
+STATUS string,
+QTR_ID int,
+MONTH_ID int,
+YEAR_ID int,
+PRODUCTLINE string,
+MSRP int,
+PRODUCTCODE string,
+PHONE int,
+CITY string,
+STATE string,
+POSTALCODE int,
+COUNTRY string,
+TERRITORY string,
+CONTACTLASTNAME string,
+CONTACTFIRSTNAME string,
+DEALSIZE string
+)
+stored as orc;  
+
+
+
+
+6. Load data from "sales_order_csv" into "sales_order_orc"
+
+from sales_order_csv insert overwrite table sales_order_orc select *;
+
+
+
+
+Perform below menioned queries on "sales_order_orc" table :
+
+
+a. Calculate total sales per year ***************
+
+SELECT YEAR_ID as SalesYear,Sum(SALES) AS TotalSales FROM sales_order_orc GROUP BY YEAR_ID  ORDER BY YEAR_ID;
+
+
+b. Find a product for which maximum orders were placed ***************
+
+SELECT PRODUCTLINE,Sum(QUANTITYORDERED) as max_orders 
+FROM sales_order_orc
+GROUP BY PRODUCTLINE;
+
+
+c. Calculate the total sales for each quarter ************
+
+Select QTR_ID,Sum(SALES) AS TotalSales
+FROM sales_order_orc GROUP BY QTR_ID;
+
+
+
+d. In which quarter sales was minimum *************
+
+select QTR_ID,min(SALES) as Min_sales_in_quater FROM sales_order_orc GROUP BY QTR_ID;
+
+
+
+e. In which country sales was maximum and in which country sales was minimum *************   Not working properly .   
+
+
+
+SELECT COUNTRY ,MIN(SALES) AS MIN_SALES,MAX(SALES) AS MAX_SALES FROM sales_order_orc GROUP BY COUNTRY ;
+
+SELECT MIN(SALES) AS MIN_SALES,MAX(SALES) AS MAX_SALES FROM sales_order_orc;
+
+SELECT COUNTRY,SALES FROM sales_order_orc HAVING SALES= (SELECT MAX(SALES) FROM sales_order_orc) ;
+
+
+
+f. Calculate quartelry sales for each city **********
+
+Select CITY,YEAR_ID,QTR_ID,SUM(SALES) AS Total_Sales FROM sales_order_orc GROUP BY CITY,YEAR_ID,QTR_ID order by YEAR_ID ;
+
+
+h. Find a month for each year in which maximum number of quantities were sold ***********
+
+select YEAR_ID,Max(QUANTITYORDERED) from sales_order_orc group by YEAR_ID;
